@@ -1,139 +1,120 @@
-# AWS Solutions Architect Exam Prep
+# AWS Certified Solutions Architect – Exam Prep Notes
 
-This repository contains summarized solutions and best practices for common AWS scenarios, organized by service. It is intended for exam preparation and quick reference.
-
----
-
-## Table of Contents
-
-1. [Amazon S3](#amazon-s3)  
-2. [Amazon EC2](#amazon-ec2)  
-3. [Amazon RDS / Databases](#amazon-rds--databases)  
-4. [Amazon SQS](#amazon-sqs)  
-5. [Networking / Global Access](#networking--global-access)  
-6. [Analytics](#analytics)  
-7. [Data Lake & Security](#data-lake--security)  
-8. [Other Services & Storage](#other-services--storage)  
+This README consolidates key AWS services, best practices, and exam-focused scenarios for quick revision.
 
 ---
 
-## Amazon S3
+<details>
+<summary>1. Amazon S3 & Storage</summary>
 
-### 1. Serverless thumbnail generation
-- **Scenario:** Images uploaded to S3; thumbnails need to be generated automatically.  
-- **Solution:**  
-  - S3 Event Notifications → AWS Lambda → generate thumbnails → store in another S3 bucket.  
+### **EBS Backup Safety**
+- Use **EBS Recycle Bin** with retention rules (e.g., 7 days) to prevent accidental permanent deletion of snapshots.
 
-### 2. Reducing KMS request costs
-- **Scenario:** High-frequency S3 uploads with SSE-KMS, high KMS costs.  
-- **Solution:**  
-  - Enable **S3 Bucket Keys** to reduce KMS requests.  
+### **S3 Object Lock**
+- Use **S3 Object Lock in Compliance Mode** to enforce **WORM policies** for regulatory compliance.  
 
-### 3. WORM / Compliance
-- **Scenario:** Regulatory compliance requires immutable storage.  
-- **Solution:**  
-  - Enable **S3 Object Lock in Compliance mode**.  
-  - Optional: combine with **S3 Glacier** for archival.  
+### **Data Lake Analytics**
+- Store raw data in **S3**.  
+- Run **SQL queries** via **Amazon Athena**.  
+- Ensure **encryption at rest** with **SSE-KMS** or S3-managed encryption.
 
-### 4. Cross-region replication & encryption
-- **Scenario:** Analytics platform with serverless SQL queries, encryption, and DR.  
-- **Solution:**  
-  - **S3 SSE-KMS encryption**  
-  - **S3 Cross-Region Replication (CRR)**  
-  - **Amazon Athena** for querying  
+### **Archival / Compliance**
+- **S3 Glacier** or **S3 Glacier Deep Archive** for long-term storage.  
+- Integrate **lifecycle policies** for automatic archival.  
 
-### 5. Archival solution
-- **Scenario:** Healthcare startup storing patient health records.  
-- **Solution:**  
-  - **S3 Lifecycle policies** → transition objects to **Glacier / Deep Archive**  
-  - Optional: **S3 Object Lock in Compliance mode**  
+</details>
 
-### 6. High-volume media storage
-- **Scenario:** 10 TB high-I/O, 450 TB active, 900 TB archival media.  
-- **Solution:**  
-  | Requirement | Service |  
-  |------------|---------|  
-  | High-performance | FSx for Lustre / EBS io2 |  
-  | Active media | S3 Standard / Intelligent-Tiering |  
-  | Archival | S3 Glacier / Glacier Deep Archive |  
+<details>
+<summary>2. EC2, Auto Scaling & High Availability</summary>
 
----
+### **Reliable Patching / Maintenance**
+- **Systems Manager Maintenance Windows** to safely remove instances from **ALB** during patching.  
+- **AWS Systems Manager Automation** (`AWSEC2-PatchLoadBalancerInstance`) for automated patching workflows.
 
-## Amazon EC2
+### **Temporary SSH Access**
+- **EC2 Instance Connect** → injects temporary public key; ephemeral SSH access.  
+- **AWS Systems Manager Session Manager (SSM)** → ephemeral browser/CLI access, fully auditable.
 
-### 1. Internet connectivity
-- **Solution:**  
-  1. Subnet route table: `0.0.0.0/0 → IGW`  
-  2. Instance has **public IPv4 or Elastic IP**  
+### **Critical Workloads – Auto Scaling**
+- Example: Healthcare web app for ambulances.  
+- **Auto Scaling Group Configuration:**  
+  - **Minimum:** 4 instances (2 per AZ)  
+  - **Maximum:** 6 instances  
+  - **Multi-AZ deployment** for high availability.  
+- **Elastic Load Balancer (ALB)** distributes traffic across instances.
 
-### 2. Auto recovery for frozen instance
-- **Solution:** Enable **EC2 Auto Recovery** via CloudWatch alarms.  
+</details>
 
-### 3. High-performance PostgreSQL
-- **Solution:** EC2 instance + **EBS io2 / io2 Block Express** for high IOPS.
+<details>
+<summary>3. Networking & Private Connectivity</summary>
 
----
+### **Private SaaS Connectivity**
+- **AWS PrivateLink** → create a private endpoint in your VPC.  
+- Traffic remains **within AWS network**, avoiding public internet.  
+- Prevents **unsolicited inbound traffic**.
 
-## Amazon RDS / Databases
+### **Internet Access for EC2**
+- EC2 requires:  
+  1. **Public IP / Elastic IP**  
+  2. **Route table** configured with **Internet Gateway (IGW)**
 
-### Multi-AZ failover
-- **Solution:** Automatic failover to standby AZ; endpoint unchanged; minimal downtime (~1–2 min).
+</details>
 
----
+<details>
+<summary>4. Real-Time Data Processing / Streaming</summary>
 
-## Amazon SQS
+### **Near-Real-Time Streaming**
+- **Amazon Kinesis Data Streams** → high-throughput ingestion, multiple consumers.  
+- **AWS Lambda / Kinesis Data Analytics** → process, cleanse, transform data.  
+- Store results in **DynamoDB** for **low-latency queries**.
 
-### Handling message failures
-- **Solution:**  
-  - Configure **Dead-Letter Queue (DLQ)**  
-  - Set maximum receive count; failed messages move to DLQ  
-  - Inspect and reprocess after fixes  
+### **Use Case Example**
+- E-commerce clickstream analytics:  
+  - Click events → **S3 raw zone**  
+  - **Athena** or **Kinesis Analytics** for SQL-based sanity checks.
 
----
+</details>
 
-## Networking / Global Access
+<details>
+<summary>5. DevOps / Security / Access</summary>
 
-### Global TCP + UDP application
-- **Solution:**  
-  - **Amazon Global Accelerator** → accelerates TCP/UDP globally  
-  - **Network Load Balancer (NLB)** in each region for TCP EC2 traffic  
+### **Ephemeral Access**
+- **EC2 Instance Connect** → temporary SSH keys, automatically removed.  
+- **Session Manager (SSM)** → browser/CLI sessions, auditable, ephemeral.
 
----
+### **Patch & Scale Management**
+- **ALB + ASG + Systems Manager** → automated patching without downtime.
 
-## Analytics
+### **Prevent Snapshot Loss**
+- Use **EBS Recycle Bin** → retention rules prevent accidental deletion.
 
-### Query historical and real-time S3 data
-- **Solution:**  
-  - **Amazon Athena** for serverless SQL queries  
-  - **S3 SSE-KMS encryption**  
-  - **S3 Cross-Region Replication** for business continuity  
+</details>
 
----
+<details>
+<summary>6. Analytics / Machine Learning</summary>
 
-## Data Lake & Security
+### **Customer Call Sentiment Analysis**
+- Audio stored in **S3** → **Transcribe** → convert speech to text.  
+- **Comprehend** → sentiment analysis on text.  
+- Store output in **S3 / Parquet / Athena** for **ad-hoc queries**.  
 
-### Detect unintended access
-- **Solution:**  
-  - **AWS IAM Access Analyzer** → analyzes IAM and resource policies  
-  - Detects public or cross-account access  
+### **Other Examples**
+- IoT sensor analytics → Kinesis → Lambda → S3 → Athena.  
+- Serverless dashboards → API Gateway + Lambda + DynamoDB.
 
----
+</details>
 
-## Other Services & Storage
+<details>
+<summary>7. CloudFront, ELB, API Gateway – Exam Guide</summary>
 
-### Hybrid on-premises + S3 low-latency access
-- **Solution:** **AWS Storage Gateway – File Gateway**  
-  - Caches frequently accessed S3 files locally for low-latency access  
+| Service | Role | Layer | Use Cases | How They Connect |
+|--------|------|-------|-----------|----------------|
+| **CloudFront** | CDN / global caching | Edge | Website acceleration, video streaming, static/dynamic content | Can front **ALB** or **API Gateway** for global low-latency access |
+| **ELB** | Load balancing | L4/L7 | Distribute traffic to EC2 / ECS / Lambda | Receives requests from **CloudFront** or clients; distributes to compute resources |
+| **API Gateway** | Managed API endpoints | L7 | REST APIs, WebSocket APIs, mobile apps | Fronted by **CloudFront**; invokes **Lambda, ALB, HTTP backends** |
 
----
-
-## Notes for Exam Prep
-
-- Prefer **serverless / fully managed solutions** for operational efficiency.  
-- **S3 Object Lock, Glacier, SSE-KMS** → compliance questions.  
-- **DLQs, Auto Recovery** → reliability and resilience.  
-- **Global Accelerator + NLB** → multi-region / hybrid access.  
-- **Athena + S3** → serverless analytics.
-
----
-
+### **Key Points / Relationships**
+- **CloudFront** → reduces latency globally, caches content.  
+- **ELB** → ensures high availability and distributes traffic.  
+- **API Gateway** → exposes serverless APIs, manages auth, throttling, caching.  
+- **Typical Architecture:**
