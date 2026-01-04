@@ -112,4 +112,31 @@ This repository contains summarized notes and key patterns for AWS services, des
 
 ---
 
+## 10. Networking / Hybrid Cloud
+
+### Maximizing VPN Throughput
+
+- **Scenario:** Retail company uses Site-to-Site VPN. Traffic surge causes slow connections.
+- **Solution:** Create an **AWS Transit Gateway** with **equal-cost multipath (ECMP) routing** and add additional VPN tunnels.
+- **Explanation:**
+  - TGW acts as a hub connecting VPCs and on-premises networks
+  - ECMP allows multiple VPN tunnels to **share traffic evenly**
+  - Benefits: Increased aggregate throughput, scalable, reduces congestion
+- **Exam Tip:** Slow VPN traffic → think **Transit Gateway + ECMP + multiple VPN tunnels**
+
+---
+
+### Multi-Region Hybrid Cloud Connectivity
+
+- **Scenario:** US and European on-premises data centers with multiple VPCs in **us-west-2** and **eu-central-1**.  
+- **Requirements:** Full connectivity across Regions, scalable, minimal manual configuration.
+- **Solution:** Connect both Direct Connect links to a **shared Direct Connect Gateway**. Attach each Region's **VGW** to the DXGW to enable **transitive routing**.
+- **Explanation:**
+  - **Direct Connect Gateway (DXGW):** Connects multiple Regions and on-premises networks
+  - **VGWs:** Connect each VPC to the DXGW
+  - Transitive routing allows **on-prem ↔ VPCs across Regions** and **VPC-to-VPC communication**
+  - Benefits: Centralized management, scalable, reduces operational overhead
+- **Exam Tip:** Multi-region + multi-Direct Connect + VPCs → **Direct Connect Gateway**
+
+
 > **Note:** These notes are designed for quick revision for AWS Solutions Architect – Associate exams and understanding real-world architectures.
